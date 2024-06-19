@@ -9,6 +9,8 @@ const taskName = $('#taskName');
 const taskDate = $('#datePicker');
 const taskDescription = $('#taskDescription');
 const toDoCards = $('#todo-cards');
+const inProgressCards = $('#in-progress-cards');
+const doneCards = $('#done-cards');
 const taskContainer = $('.swim-lanes')
 
 // Function to generate a unique task ID
@@ -47,26 +49,38 @@ function createTaskCard(task) {
     const cardDeleteBtn = $('<button>')
         .addClass('btn btn-danger deleteTaskBtn')
         .text('Delete')
-        .attr('data-task-id', task.taskID)
+        .attr('data-task-id', task.taskID);
 
-    // Sets the card background color based on due date. Only apply the styles if the due date exists and the status is not done.
-    if (task.taskDueDate) {
-        const now = dayjs();
-        const taskDueDate = dayjs(task.taskDueDate, 'YYYY-MM-DD');
+        // If the Card has been placed in Done Lane, leave it white. 
+        if (task.status !== 'done') {
 
-        // If the task is due today, make the card yellow. If it is overdue, make it red.
-        if (now.isSame(taskDueDate, 'day')) {
-            taskCard.addClass('bg-warning text-white');
-        } else if (now.isAfter(taskDueDate)) {
-            taskCard.addClass('bg-danger text-white');
-            cardDeleteBtn.addClass('border-light');
+            // Sets the card background color based on due date. Only apply the styles if the due date exists and the status is not done.
+            if (task.taskDueDate) {
+            const now = dayjs();
+            const taskDueDate = dayjs(task.taskDueDate, 'YYYY-MM-DD');
+
+            //If the task is due today, make the card yellow. If it is overdue, make it red.
+            if (now.isSame(taskDueDate, 'day')) {
+                taskCard.addClass('bg-warning text-white');
+            } else if (now.isAfter(taskDueDate)) {
+                taskCard.addClass('bg-danger text-white');
+                cardDeleteBtn.addClass('border-light');
+            }
         }
     }
 
     // Append the card content to the card body.
     cardBody.append(cardType, cardDueDate, cardDeleteBtn);
     taskCard.append(cardHeader, cardBody);
-    toDoCards.append(taskCard);
+
+    // Append the task card to the appropriate lane based on its status
+    if (task.status === 'to-do') {
+        toDoCards.append(taskCard);
+    } else if (task.status === 'in-progress') {
+        inProgressCards.append(taskCard);
+    } else if (task.status === 'done') {
+        doneCards.append(taskCard);
+    }
 
     // Make the task card draggable
     taskCard.draggable({
@@ -92,6 +106,16 @@ function createTaskCard(task) {
 // Function to render the task list and make cards draggable
 function renderTaskList() {
     toDoCards.empty();
+    inProgressCards.empty();
+    doneCards.empty();
+
+    // Sorting the cards by due date, to keep the earliest due always on top of the stack.
+    taskList.sort((a, b) => {
+        if (!a.taskDueDate) return 1;
+        if (!b.taskDueDate) return -1;
+        return dayjs(a.taskDueDate).diff(dayjs(b.taskDueDate));
+    });
+
     taskList.forEach(task => createTaskCard(task));
 }
 
@@ -101,12 +125,13 @@ function handleAddTask() {
         taskID: generateTaskId(),
         taskName: taskName.val(),
         taskDueDate: taskDate.val(),
-        taskDescription: taskDescription.val()
+        taskDescription: taskDescription.val(),
+        status: 'to-do'
     };
     taskList.push(task);
     localStorage.setItem("tasks", JSON.stringify(taskList));
     localStorage.setItem("nextId", JSON.stringify(nextId));
-    createTaskCard(task);
+    renderTaskList();
     taskForm[0].reset();
 }
 
@@ -124,7 +149,7 @@ function handleDrop(event, ui) {
     const newLane = $(this).attr('id');
     const taskIndex = taskList.findIndex(task => task.taskID === taskID);
 
-    if (taskIndex !== -1) {
+    if (taskIndex >= 0) {
         taskList[taskIndex].status = newLane;
         localStorage.setItem("tasks", JSON.stringify(taskList));
         renderTaskList();
@@ -139,19 +164,17 @@ $(document).ready(function () {
     // Create Task on Add Task Button Click
     createTaskBtn.on('click', handleAddTask);
 
-    // Delete Task on Delete  Task Button Click
-    taskContainer.on('click','.deleteTaskBtn',handleDeleteTask)
+    // Delete Task on Delete Task Button Click
+    taskContainer.on('click', '.deleteTaskBtn', handleDeleteTask);
 
     // Reset form on cancel task creation
-    closeTaskFormBtn.on('click', function() {
+    closeTaskFormBtn.on('click', function () {
         taskForm[0].reset();
     });
-    
+
     // Make lanes droppable
     $('.droppable').droppable({
         accept: '.draggable',
         drop: handleDrop
     });
-
-    // Add other event listeners and initialization logic here
 });

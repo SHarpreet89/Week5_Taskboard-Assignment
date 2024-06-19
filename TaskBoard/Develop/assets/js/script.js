@@ -45,17 +45,15 @@ function createTaskCard(task) {
         .addClass('card-text')
         .text(task.taskDueDate);
 
-    // Create a new button element and add the classes `btn`, `btn-danger`, and `delete`. Also set the text of the button to "Delete" and add a `data-task-id` attribute and set it to the task id.
+    // Create a new button element and add the classes `btn`, `btn-danger`, and `delete`. Also set the text of the button to "Delete".
     const cardDeleteBtn = $('<button>')
         .addClass('btn btn-danger deleteTaskBtn')
-        .text('Delete')
-        .attr('data-task-id', task.taskID);
+        .text('Delete');
 
-        // If the Card has been placed in Done Lane, leave it white. 
-        if (task.status !== 'done') {
-
-            // Sets the card background color based on due date. Only apply the styles if the due date exists and the status is not done.
-            if (task.taskDueDate) {
+    // If the Card has been placed in Done Lane, leave it white. 
+    if (task.status !== 'done') {
+        // Sets the card background color based on due date. Only apply the styles if the due date exists and the status is not done.
+        if (task.taskDueDate) {
             const now = dayjs();
             const taskDueDate = dayjs(task.taskDueDate, 'YYYY-MM-DD');
 
@@ -137,7 +135,8 @@ function handleAddTask() {
 
 // Function to handle deleting a task
 function handleDeleteTask() {
-    const taskID = $(this).attr('data-task-id');
+    const taskCard = $(this).closest('.card');
+    const taskID = taskCard.attr('data-task-id');
     taskList = taskList.filter(task => task.taskID !== taskID);
     localStorage.setItem("tasks", JSON.stringify(taskList));
     renderTaskList();

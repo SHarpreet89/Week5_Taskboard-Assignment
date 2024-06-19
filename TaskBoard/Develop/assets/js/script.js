@@ -9,10 +9,13 @@ const taskName = $('#taskName');
 const taskDate = $('#datePicker');
 const taskDescription = $('#taskDescription');
 const toDoCards = $('#todo-cards');
+const taskContainer = $('.swim-lanes')
 
 // Function to generate a unique task ID
 function generateTaskId() {
-    return 'task-' + nextId++;
+    const taskID = 'task-' + Math.random().toString(36).substring(2, 11);
+    console.log(taskID);
+    return taskID;
 }
 
 // Function to create a task card
@@ -42,10 +45,9 @@ function createTaskCard(task) {
 
     // Create a new button element and add the classes `btn`, `btn-danger`, and `delete`. Also set the text of the button to "Delete" and add a `data-task-id` attribute and set it to the task id.
     const cardDeleteBtn = $('<button>')
-        .addClass('btn btn-danger delete')
+        .addClass('btn btn-danger deleteTaskBtn')
         .text('Delete')
         .attr('data-task-id', task.taskID)
-        .on('click', handleDeleteTask);
 
     // Sets the card background color based on due date. Only apply the styles if the due date exists and the status is not done.
     if (task.taskDueDate) {
@@ -61,14 +63,30 @@ function createTaskCard(task) {
         }
     }
 
-    // Append the card description, card due date, and card delete button to the card body.
+    // Append the card content to the card body.
     cardBody.append(cardType, cardDueDate, cardDeleteBtn);
-
-    // Append the card header and card body to the card.
     taskCard.append(cardHeader, cardBody);
-
-    // Append the card to the toDoCards container.
     toDoCards.append(taskCard);
+
+    // Make the task card draggable
+    taskCard.draggable({
+        opacity: 0.7,
+        zIndex: 100,
+        helper: function (e) {
+            const original = $(e.target).hasClass('ui-draggable')
+                ? $(e.target)
+                : $(e.target).closest('.ui-draggable');
+            return original.clone().css({
+                width: original.outerWidth(),
+            });
+        },
+        start: function (event, ui) {
+            $('body').css('cursor', 'grabbing');
+        },
+        stop: function (event, ui) {
+            $('body').css('cursor', 'auto');
+        }
+    });
 }
 
 // Function to render the task list and make cards draggable
@@ -102,16 +120,38 @@ function handleDeleteTask() {
 
 // Function to handle dropping a task into a new status lane
 function handleDrop(event, ui) {
-    // Handle task drop logic here
+    const taskID = ui.draggable.attr('data-task-id');
+    const newLane = $(this).attr('id');
+    const taskIndex = taskList.findIndex(task => task.taskID === taskID);
+
+    if (taskIndex !== -1) {
+        taskList[taskIndex].status = newLane;
+        localStorage.setItem("tasks", JSON.stringify(taskList));
+        renderTaskList();
+    }
 }
 
 // Initialize the page
 $(document).ready(function () {
     renderTaskList();
-    taskDate.datepicker({ clearBtn: true });
+    taskDate.datepicker();
+
+    // Create Task on Add Task Button Click
     createTaskBtn.on('click', handleAddTask);
+
+    // Delete Task on Delete  Task Button Click
+    taskContainer.on('click','.deleteTaskBtn',handleDeleteTask)
+
+    // Reset form on cancel task creation
     closeTaskFormBtn.on('click', function() {
         taskForm[0].reset();
     });
+    
+    // Make lanes droppable
+    $('.droppable').droppable({
+        accept: '.draggable',
+        drop: handleDrop
+    });
+
     // Add other event listeners and initialization logic here
 });

@@ -1,4 +1,4 @@
-# Harpreet Singh Taskboard
+# Taskboard Webapp
 
 ## Description
 

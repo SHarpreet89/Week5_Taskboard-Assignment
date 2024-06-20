@@ -28,4 +28,4 @@ https://github.com/SHarpreet89
 
 ## Screenshot
 
-![Alt text](./assets/images/Website%20Image.png)
+![Alt text](./Develop/assets/images/Website%20Image.png)
